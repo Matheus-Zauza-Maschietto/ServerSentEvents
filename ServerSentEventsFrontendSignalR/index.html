@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temperature Monitor - SignalR</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .temperature-display {
+            font-size: 4rem;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .card {
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        .connection-status {
+            text-align: center;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .timestamp {
+            text-align: center;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        #temperatureChart {
+            width: 100%;
+            height: 300px;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Real-time Temperature Monitor</h1>
+    <div id="connectionStatus" class="connection-status disconnected">Disconnected</div>
+    
+    <div class="card">
+        <div class="temperature-display">
+            <span id="temperatureValue">--.-</span>°<span id="temperatureUnit">C</span>
+        </div>
+        <div class="timestamp">Last updated: <span id="timestamp">--</span></div>
+    </div>
+
+    <script>
+        // DOM elements
+        const temperatureValueEl = document.getElementById('temperatureValue');
+        const temperatureUnitEl = document.getElementById('temperatureUnit');
+        const timestampEl = document.getElementById('timestamp');
+        const connectionStatusEl = document.getElementById('connectionStatus');
+        
+        // Connect to SignalR hub
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl('http://localhost:5108/temperature-hub')
+            .withAutomaticReconnect()
+            .build();
+            
+        // Handle received temperature updates
+        connection.on('ReceiveTemperature', (data) => {
+            temperatureValueEl.textContent = data.value;
+            temperatureUnitEl.textContent = data.unit;
+            
+            // Format timestamp
+            const timestamp = new Date(data.timestamp);
+            timestampEl.textContent = timestamp.toLocaleTimeString();
+            
+            console.log('Received temperature:', data);
+        });
+        
+        // Connection status handling
+        connection.onreconnecting(() => {
+            connectionStatusEl.textContent = 'Reconnecting...';
+            connectionStatusEl.className = 'connection-status disconnected';
+        });
+        
+        connection.onreconnected(() => {
+            connectionStatusEl.textContent = 'Connected';
+            connectionStatusEl.className = 'connection-status connected';
+        });
+        
+        connection.onclose(() => {
+            connectionStatusEl.textContent = 'Disconnected';
+            connectionStatusEl.className = 'connection-status disconnected';
+            
+            // Try to reconnect after a delay
+            setTimeout(() => startConnection(), 5000);
+        });
+        
+        // Start the connection
+        function startConnection() {
+            connectionStatusEl.textContent = 'Connecting...';
+            
+            connection.start()
+                .then(() => {
+                    connectionStatusEl.textContent = 'Connected';
+                    connectionStatusEl.className = 'connection-status connected';
+                    console.log('Connected to SignalR hub');
+                })
+                .catch(err => {
+                    connectionStatusEl.textContent = 'Connection failed';
+                    console.error('Connection failed: ', err);
+                    
+                    // Try to reconnect after a delay
+                    setTimeout(() => startConnection(), 5000);
+                });
+        }
+        
+        // Initialize the connection when the page loads
+        startConnection();
+    </script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temperature Monitor - Real-time</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+            background-color: #f8f9fa;
+        }
+        .temperature-display {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 40px 0;
+            color: #007bff;
+        }
+        .connection-status {
+            padding: 10px;
+            margin: 20px 0;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .last-updated {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-top: 30px;
+        }
+        .chart-container {
+            height: 200px;
+            width: 100%;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Real-time Temperature Monitor</h1>
+    
+    <div class="connection-status disconnected" id="status">
+        Disconnected
+    </div>
+    
+    <div class="card">
+        <h2>Current Temperature</h2>
+        <div class="temperature-display" id="temperature">--.-°C</div>
+        <div class="last-updated" id="timestamp">Not yet updated</div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const temperatureDisplay = document.getElementById('temperature');
+            const statusDisplay = document.getElementById('status');
+            const timestampDisplay = document.getElementById('timestamp');
+            
+            // Server URL
+            const sseEndpoint = 'http://localhost:5108/temperature-events';
+            
+            // Temperature history
+            const recentTemperatures = [];
+            const maxReadings = 20;
+            
+            let eventSource = null;
+            
+            // Update the UI with temperature data
+            function updateTemperatureDisplay(data) {
+                temperatureDisplay.textContent = `${data.value.toFixed(1)}°${data.unit || 'C'}`;
+                timestampDisplay.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+                
+                // Store the reading for history
+                recentTemperatures.push({
+                    value: data.value,
+                    timestamp: new Date()
+                });
+                
+                if (recentTemperatures.length > maxReadings) {
+                    recentTemperatures.shift();
+                }
+            }
+            
+            // Initialize SSE connection
+            function initSSE() {
+                if (eventSource) {
+                    eventSource.close();
+                }
+                
+                eventSource = new EventSource(sseEndpoint);
+                
+                // Handle incoming temperature events
+                eventSource.addEventListener('temperature', (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        updateTemperatureDisplay(data);
+                    } catch (error) {
+                        console.error('Error parsing temperature data:', error);
+                    }
+                });
+                
+                // Connection opened
+                eventSource.onopen = () => {
+                    statusDisplay.textContent = 'Connected via Server-Sent Events';
+                    statusDisplay.classList.remove('disconnected');
+                    statusDisplay.classList.add('connected');
+                };
+                
+                // Connection error
+                eventSource.onerror = () => {
+                    statusDisplay.textContent = 'Connection lost. Attempting to reconnect...';
+                    statusDisplay.classList.remove('connected');
+                    statusDisplay.classList.add('disconnected');
+                };
+            }
+            
+            // Initialize the SSE connection
+            initSSE();
+        });
+    </script>
+</body>
+</html>
