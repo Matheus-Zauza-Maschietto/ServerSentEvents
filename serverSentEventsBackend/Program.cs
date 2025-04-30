@@ -42,12 +42,10 @@ app.MapGet("/temperature-events", async (HttpContext context) =>
             timestamp = DateTime.UtcNow
         };
 
-        // Format as SSE event
         await context.Response.WriteAsync($"event: temperature\n");
         await context.Response.WriteAsync($"data: {System.Text.Json.JsonSerializer.Serialize(temperature)}\n\n");
         await context.Response.Body.FlushAsync();
 
-        // Wait for 1 second before sending the next update
         await Task.Delay(1000, context.RequestAborted);
     }
 });
@@ -92,7 +90,6 @@ public class TemperatureHub : Microsoft.AspNetCore.SignalR.Hub
                 timestamp = DateTime.UtcNow
             };
 
-            // Use the static hubContext instead of Clients
             await _hubContext.Clients.All.SendAsync("ReceiveTemperature", temperature);
         }
         catch (Exception ex)
