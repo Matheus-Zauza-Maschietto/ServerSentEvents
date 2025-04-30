@@ -62,31 +62,25 @@
     </div>
 
     <script>
-        // DOM elements
         const temperatureValueEl = document.getElementById('temperatureValue');
         const temperatureUnitEl = document.getElementById('temperatureUnit');
         const timestampEl = document.getElementById('timestamp');
         const connectionStatusEl = document.getElementById('connectionStatus');
         
-        // Connect to SignalR hub
         const connection = new signalR.HubConnectionBuilder()
             .withUrl('http://localhost:5108/temperature-hub')
             .withAutomaticReconnect()
             .build();
             
-        // Handle received temperature updates
         connection.on('ReceiveTemperature', (data) => {
             temperatureValueEl.textContent = data.value;
             temperatureUnitEl.textContent = data.unit;
-            
-            // Format timestamp
             const timestamp = new Date(data.timestamp);
             timestampEl.textContent = timestamp.toLocaleTimeString();
             
             console.log('Received temperature:', data);
         });
         
-        // Connection status handling
         connection.onreconnecting(() => {
             connectionStatusEl.textContent = 'Reconnecting...';
             connectionStatusEl.className = 'connection-status disconnected';
@@ -100,12 +94,9 @@
         connection.onclose(() => {
             connectionStatusEl.textContent = 'Disconnected';
             connectionStatusEl.className = 'connection-status disconnected';
-            
-            // Try to reconnect after a delay
             setTimeout(() => startConnection(), 5000);
         });
         
-        // Start the connection
         function startConnection() {
             connectionStatusEl.textContent = 'Connecting...';
             
@@ -118,13 +109,10 @@
                 .catch(err => {
                     connectionStatusEl.textContent = 'Connection failed';
                     console.error('Connection failed: ', err);
-                    
-                    // Try to reconnect after a delay
                     setTimeout(() => startConnection(), 5000);
                 });
         }
         
-        // Initialize the connection when the page loads
         startConnection();
     </script>
 </body>

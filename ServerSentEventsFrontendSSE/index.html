@@ -70,21 +70,17 @@
             const statusDisplay = document.getElementById('status');
             const timestampDisplay = document.getElementById('timestamp');
             
-            // Server URL
             const sseEndpoint = 'http://localhost:5108/temperature-events';
             
-            // Temperature history
             const recentTemperatures = [];
             const maxReadings = 20;
             
             let eventSource = null;
             
-            // Update the UI with temperature data
             function updateTemperatureDisplay(data) {
                 temperatureDisplay.textContent = `${data.value.toFixed(1)}°${data.unit || 'C'}`;
                 timestampDisplay.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
                 
-                // Store the reading for history
                 recentTemperatures.push({
                     value: data.value,
                     timestamp: new Date()
@@ -95,15 +91,11 @@
                 }
             }
             
-            // Initialize SSE connection
             function initSSE() {
                 if (eventSource) {
                     eventSource.close();
                 }
-                
                 eventSource = new EventSource(sseEndpoint);
-                
-                // Handle incoming temperature events
                 eventSource.addEventListener('temperature', (event) => {
                     try {
                         const data = JSON.parse(event.data);
@@ -113,14 +105,12 @@
                     }
                 });
                 
-                // Connection opened
                 eventSource.onopen = () => {
                     statusDisplay.textContent = 'Connected via Server-Sent Events';
                     statusDisplay.classList.remove('disconnected');
                     statusDisplay.classList.add('connected');
                 };
                 
-                // Connection error
                 eventSource.onerror = () => {
                     statusDisplay.textContent = 'Connection lost. Attempting to reconnect...';
                     statusDisplay.classList.remove('connected');
@@ -128,7 +118,6 @@
                 };
             }
             
-            // Initialize the SSE connection
             initSSE();
         });
     </script>
