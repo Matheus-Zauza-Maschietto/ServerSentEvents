@@ -68,7 +68,11 @@
         const connectionStatusEl = document.getElementById('connectionStatus');
         
         const connection = new signalR.HubConnectionBuilder()
-            .withUrl('http://localhost:5108/temperature-hub')
+            .withUrl('http://localhost:5108/temperature-hub',
+                {
+                    transport: signalR.HttpTransportType.ServerSentEvents
+                }
+            )
             .withAutomaticReconnect()
             .build();
             
